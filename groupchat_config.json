@@ -1,0 +1,20 @@
+{
+  "agents": [
+    {
+      "name": "retriever",
+      "system_message": "Default system message for retriever_agent"
+    },
+    {
+      "name": "analyst",
+      "system_message": "Default system message for analyst_agent"
+    },
+    {
+      "name": "fact_checker",
+      "system_message": "Default system message for fact_checker_agent"
+    },
+    {
+      "name": "synthesizer",
+      "system_message": "Default system message for synthesizer_agent"
+    }
+  ]
+}
