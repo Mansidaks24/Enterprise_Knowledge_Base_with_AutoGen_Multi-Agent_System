@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, '/Users/mansidaksingh/Desktop/capestone/enterprise_kb_autogen')
 
-from retriever_agent import RetrieverAgent
+from agents.retriever_agent import RetrieverAgent
 
 
 def test_faiss_save_load_skip_if_unavailable(tmp_path):

@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, '/Users/mansidaksingh/Desktop/capestone/enterprise_kb_autogen')
 
-from retriever_agent import RetrieverAgent
+from agents.retriever_agent import RetrieverAgent
 
 
 def test_chroma_indexing_skip_if_unavailable(tmp_path):

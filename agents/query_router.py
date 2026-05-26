@@ -8,7 +8,7 @@ import json
 from typing import Dict, Tuple, List, Any
 from dataclasses import dataclass
 from datetime import datetime
-
+from monitoring.agent_conversations import AgentConversationLogger
 
 @dataclass
 class QueryAnalysis:
@@ -145,6 +145,21 @@ class QueryRouter:
         })
         
         print(f"   ✓ Routed to: {query_type.upper()} ({overall_confidence:.1%} confidence)")
+        AgentConversationLogger.log(
+        "Query Router",
+        f"""
+        Query classified as {query_type.upper()}
+
+        SQL Confidence:
+        {sql_confidence:.1%}
+
+        RAG Confidence:
+        {rag_confidence:.1%}
+
+        Final Routing Confidence:
+        {overall_confidence:.1%}
+        """
+        )
         
         return analysis
     

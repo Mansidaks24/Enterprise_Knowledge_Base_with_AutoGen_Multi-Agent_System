@@ -8,8 +8,8 @@ import json
 from typing import Dict, List, Any
 from dataclasses import dataclass
 from datetime import datetime
-from llm_adapter import LLMAdapter
-
+from agents.llm_adapter import LLMAdapter
+from monitoring.logger import SystemLogger
 
 @dataclass
 class SynthesizedAnswer:
@@ -70,6 +70,9 @@ class SynthesizerAgent:
         Returns:
             SynthesizedAnswer with final polished response
         """
+        SystemLogger.info(
+            "Synthesizing final answer"
+        )
         print(f"\n📝 Synthesizer Agent - Generating final answer")
         print(f"   Query: {query[:100]}...")
         

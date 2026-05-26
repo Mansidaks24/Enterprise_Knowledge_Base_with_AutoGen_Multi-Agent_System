@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, '/Users/mansidaksingh/Desktop/capestone/enterprise_kb_autogen')
 
-from retriever_agent import RetrieverAgent
+from agents.retriever_agent import RetrieverAgent
 
 
 def test_semantic_retrieval_skip_if_no_deps(tmp_path):

@@ -7,11 +7,11 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from retriever_agent import RetrieverAgent, RetrievalResult
-from analyst_agent import AnalystAgent
-from fact_checker_agent import FactCheckerAgent
-from synthesizer_agent import SynthesizerAgent
-from query_router import QueryRouter
+from agents.retriever_agent import RetrieverAgent, RetrievalResult
+from agents.analyst_agent import AnalystAgent
+from agents.fact_checker_agent import FactCheckerAgent
+from agents.synthesizer_agent import SynthesizerAgent
+from agents.query_router import QueryRouter
 
 
 def setup_sample_db(path):
