@@ -11,12 +11,14 @@ from pathlib import Path
 from dataclasses import dataclass
 from datetime import datetime
 import sqlite3
+from agents.text2sql_agent import Text2SQLAgent
+from monitoring.logger import SystemLogger
+from sentence_transformers import SentenceTransformer
 
 try:
-    from langchain.sql_database import SQLDatabase
+    from langchain_community.sql_database import SQLDatabase
     from langchain_community.utilities import SQLDatabaseChain
     from langchain.agents import Tool
-    from sentence_transformers import SentenceTransformer
 except ImportError:
     print("Warning: Some dependencies not installed. Install with: pip install -r requirements.txt")
 
@@ -26,10 +28,12 @@ try:
 except Exception:
     FAISS_AVAILABLE = False
 
+
 try:
     import chromadb
     CHROMA_AVAILABLE = True
 except Exception:
+    chromadb = None
     CHROMA_AVAILABLE = False
 
 
@@ -67,6 +71,9 @@ class RetrieverAgent:
         self.db_path = db_path or "knowledge_base.db"
         self.documents_path = documents_path or "./data/documents"
         self.retrieved_sources = []
+        self.text2sql_agent = Text2SQLAgent(
+            self.db_path
+        )
         
         # Initialize embedding model if available and FAISS enabled
         self.embedding_model = None
@@ -181,32 +188,6 @@ class RetrieverAgent:
         self.vector_index = index
         self.vector_docs = docs
 
-    def _index_documents_chroma(self, persist_directory: str = None):
-        """Index documents into a Chroma collection with optional persistence."""
-        if not CHROMA_AVAILABLE or not self.embedding_model:
-            raise RuntimeError("Chroma or embedding model not available")
-        persist = persist_directory or os.environ.get('VECTOR_DB_PATH', './data/faiss_index')
-        try:
-            from chromadb.config import Settings
-            settings = Settings(chroma_db_impl="duckdb+parquet", persist_directory=persist)
-            client = chromadb.Client(settings=settings)
-            try:
-                collection = client.get_collection(name="enterprise_kb")
-            except Exception:
-                collection = client.create_collection(name="enterprise_kb")
-
-            ids = []
-            metadatas = []
-            documents = []
-            for i, (name, content) in enumerate(self.document_index.items()):
-                ids.append(str(i))
-                metadatas.append({"doc": name})
-                documents.append(content)
-
-            collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
-            self.chroma_collection = collection
-        except Exception as e:
-            print(f"Chroma indexing failed: {e}")
 
     def _index_documents_chroma(self):
         """Index documents into a Chroma collection (local persistence)."""
@@ -250,53 +231,130 @@ class RetrieverAgent:
         """
         try:
             conn = sqlite3.connect(self.db_path)
+
             cursor = conn.cursor()
-            
-            # Try to execute as SQL query
-            try:
-                cursor.execute(query)
-                columns = [description[0] for description in cursor.description]
-                rows = cursor.fetchall()
-                
-                if rows:
-                    # Format results
-                    result_text = "Retrieved from database:\n"
-                    for row in rows:
-                        result_text += str(dict(zip(columns, row))) + "\n"
-                    
-                    return RetrievalResult(
-                        source_type="database",
-                        content=result_text,
-                        source_reference=f"SQL Query: {query}",
-                        confidence=0.95,
-                        metadata={"rows": len(rows), "columns": columns},
-                        timestamp=datetime.now().isoformat()
+
+            # -----------------------------------
+            # Detect Raw SQL vs Natural Language
+            # -----------------------------------
+
+            sql_keywords = [
+                "select",
+                "insert",
+                "update",
+                "delete",
+                "create",
+                "drop"
+            ]
+
+            is_raw_sql = any(
+                query.lower().strip().startswith(keyword)
+                for keyword in sql_keywords
+            )
+
+            # -----------------------------------
+            # RAW SQL QUERY
+            # -----------------------------------
+
+            if is_raw_sql:
+
+                sql_query = query
+
+            # -----------------------------------
+            # NATURAL LANGUAGE → SQL
+            # -----------------------------------
+
+            else:
+
+                print(" Generating SQL from natural language...")
+
+                generated = self.text2sql_agent.process_query(
+                    query
+                )
+
+                sql_query = generated["generated_sql"]
+
+                print(f"   ✓ Generated SQL: {sql_query}")
+
+            # -----------------------------------
+            # EXECUTE SQL
+            # -----------------------------------
+
+            cursor.execute(sql_query)
+
+            columns = [
+                description[0]
+                for description in cursor.description
+            ]
+
+            rows = cursor.fetchall()
+
+            if rows:
+
+                result_text = "Retrieved from database:\n\n"
+
+                for row in rows:
+
+                    result_text += (
+                        str(dict(zip(columns, row)))
+                        + "\n"
                     )
-                else:
-                    return RetrievalResult(
-                        source_type="database",
-                        content="No data found for query",
-                        source_reference=f"SQL Query: {query}",
-                        confidence=0.5,
-                        metadata={"rows": 0},
-                        timestamp=datetime.now().isoformat()
-                    )
-            
-            except sqlite3.OperationalError as e:
-                # If it's not valid SQL, try keyword matching
-                return self._keyword_search_database(query)
-            
-            finally:
                 conn.close()
-        
+                return RetrievalResult(
+
+                    source_type="database",
+
+                    content=result_text,
+
+                    source_reference=sql_query,
+
+                    confidence=0.95,
+
+                    metadata={
+                        "rows": len(rows),
+                        "columns": columns,
+                        "generated_sql": sql_query
+                    },
+
+                    timestamp=datetime.now().isoformat()
+                )
+
+            else:
+
+                return RetrievalResult(
+
+                    source_type="database",
+
+                    content="No data found for query",
+
+                    source_reference=sql_query,
+
+                    confidence=0.5,
+
+                    metadata={
+                        "rows": 0,
+                        "generated_sql": sql_query
+                    },
+
+                    timestamp=datetime.now().isoformat()
+                )
+
         except Exception as e:
+
             print(f"Database retrieval error: {e}")
+
             return RetrievalResult(
+
                 source_type="database",
+
                 content=f"Error retrieving from database: {str(e)}",
+
                 source_reference="Database Error",
+
                 confidence=0.0,
+
                 metadata={"error": str(e)},
+
                 timestamp=datetime.now().isoformat()
             )
     
@@ -520,6 +578,9 @@ Average Confidence: {(db_result.confidence + doc_result.confidence) / 2:.2f}
             RetrievalResult object
         """
         print(f"\n🔍 Retriever Agent - Searching {retrieval_type}")
+        SystemLogger.info(
+            f"Retriever searching: {query}"
+        )
         print(f"   Query: {query[:100]}...")
         
         if retrieval_type == "database":

@@ -8,7 +8,7 @@ import json
 from typing import Dict, List, Tuple, Any
 from dataclasses import dataclass
 from datetime import datetime
-
+from monitoring.logger import SystemLogger
 
 @dataclass
 class FactCheckResult:
@@ -63,6 +63,9 @@ class FactCheckerAgent:
         Returns:
             ValidationReport with findings
         """
+        SystemLogger.info(
+            "Fact-checking analysis"
+        )
         print(f"\n✓ Fact-Checker Agent - Validating analysis")
         print(f"   Analyzing: {analysis_text[:100]}...")
         

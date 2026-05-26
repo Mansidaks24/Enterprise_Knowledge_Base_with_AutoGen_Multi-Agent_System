@@ -1,0 +1,119 @@
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# ENVIRONMENT VARIABLES
+# =========================
+.env
+.env.local
+.env.*.local
+
+# =========================
+# IDE / EDITOR
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# JUPYTER
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# LOGS
+# =========================
+logs/
+*.log
+
+# =========================
+# TESTING
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =========================
+# BUILD FILES
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# DATABASES
+# =========================
+*.sqlite3
+*.db
+
+# =========================
+# VECTOR DATABASES
+# =========================
+data/chromadb/
+data/faiss_index/
+
+# =========================
+# CACHE
+# =========================
+.cache/
+*.cache
+
+# =========================
+# STREAMLIT
+# =========================
+.streamlit/
+
+# =========================
+# REDIS DUMPS
+# =========================
+dump.rdb
+
+# =========================
+# UPLOADED DATA FILES
+# =========================
+data/csv_files/
+data/documents/
+
+# Keep folder structure
+!data/csv_files/.gitkeep
+!data/documents/.gitkeep
+
+# =========================
+# AUTO-GENERATED REPORTS
+# =========================
+conversation_history_*.json
+retrieval_log_*.json
+analysis_log_*.json
+validation_log_*.json
+synthesis_log_*.json
+routing_log_*.json
+
+# =========================
+# API KEYS / SECRETS
+# =========================
+secrets.json
+credentials.json
+
+# =========================
+# TEMP FILES
+# =========================
+tmp/
+temp/
+*.tmp
